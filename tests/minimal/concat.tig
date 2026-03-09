@@ -1,0 +1,11 @@
+/* Private: check that concat works properly including with special
+   cases (empty string etc.).  */
+let function check(s1: string, s2: string) =
+    (print(concat(s1, s2)); print("\n"))
+    var empty := ""
+in
+  check(empty, empty);
+  check("a", empty);
+  check(empty, "b");
+  check("a", "b")
+end
