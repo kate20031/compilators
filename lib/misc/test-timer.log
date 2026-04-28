@@ -1,0 +1,12 @@
+Execution times (seconds)
+ One                     : 0      (    0%)   0      (    0%)   1      ( 16.7%) 
+ Three                   : 0      (    0%)   0      (    0%)   3      (   50%) 
+ Two                     : 0      (    0%)   0      (    0%)   2      ( 33.3%) 
+
+Cumulated times (seconds)
+ One                     : 0      (    0%)   0      (    0%)   1      ( 16.7%) 
+ Three                   : 0      (    0%)   0      (    0%)   3      (   50%) 
+ Two                     : 0      (    0%)   0      (    0%)   2      ( 33.3%) 
+
+ TOTAL (seconds)         : 0      user,      0      system,    6      wall
+PASS lib/misc/test-timer (exit status: 0)
