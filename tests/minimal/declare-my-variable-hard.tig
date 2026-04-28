@@ -1,0 +1,6 @@
+let
+  var str := "My printed variable"
+in
+  print(str);
+  print("\n")
+end

@@ -1,0 +1,8 @@
+let
+    function add(a: int, b: int): int = (
+        a + b
+    )
+in
+    print_int(add(1, 2));
+    print("\n")
+end
