@@ -73,18 +73,12 @@
 #include <boost/lexical_cast.hpp>
 
 #include <misc/contract.hh>
-  // Using misc::escape is very useful to quote non printable characters.
-  // For instance
-  //
-  //    std::cerr << misc::escape('\n') << '\n';
-  //
-  // reports about `\n' instead of an actual new-line character.
 #include <misc/escape.hh>
 #include <misc/symbol.hh>
 #include <parse/parsetiger.hh>
 #include <parse/tiger-driver.hh>
 
-  // FIXME: Some code was deleted here (Define YY_USER_ACTION to update locations).
+#define YY_USER_ACTION td.location_.columns(size());
 
 #define TOKEN(Type)                             \
   parser::make_ ## Type(td.location_)
@@ -100,7 +94,6 @@
                 << ": invalid identifier: `"            \
                 << misc::escape(text()) << "'\n";       \
   } while (false)
-
 
 
 
@@ -135,9 +128,10 @@ typedef reflex::FlexLexer<reflex::Matcher> FlexLexer;
 namespace parse {
 
 class Lexer : public FlexLexer {
-#line 66 "src/parse/scantiger.ll"
+#line 60 "src/parse/scantiger.ll"
 
-  // FIXME: Some code was deleted here (Local variables).
+  std::string string_;
+  int comment_depth_ = 0;
 
  public:
   Lexer(

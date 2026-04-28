@@ -11,7 +11,7 @@
 namespace misc
 {
   template <typename T, class C> unique<T, C>::unique(const data_type& s)
-  // FIXME: Some code was deleted here (Initializations).
+  // FIXED: Some code was deleted here (Initializations).
   /** \brief Following the Flyweight design pattern, set the attribute to a
        unique reference of value s. You might want to check out std::set methods
        on cppreference.com. */
@@ -24,7 +24,7 @@ namespace misc
   template <typename T, class C>
   typename unique<T, C>::object_set_type& unique<T, C>::object_set_instance()
   {
-    // FIXME: Some code was deleted here (Classical Singleton pattern, a la Scott Meyers').
+    // FIXED: Some code was deleted here (Classical Singleton pattern, a la Scott Meyers').
     /** \brief Create a persistent instance of a set which would hold each value. */
     
     static object_set_type objects;
@@ -35,7 +35,7 @@ namespace misc
   template <typename T, class C>
   typename unique<T, C>::object_size_type unique<T, C>::object_map_size()
   {
-    // FIXME: Some code was deleted here.
+    // FIXED: Some code was deleted here.
     
     return object_set_instance().size();
 
@@ -44,7 +44,7 @@ namespace misc
   template <typename T, class C>
   inline const typename unique<T, C>::data_type& unique<T, C>::get() const
   {
-    // FIXME: Some code was deleted here.
+    // FIXED: Some code was deleted here.
     assertion(obj_);
     return *obj_;
 

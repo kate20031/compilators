@@ -70,18 +70,12 @@
 #include <boost/lexical_cast.hpp>
 
 #include <misc/contract.hh>
-  // Using misc::escape is very useful to quote non printable characters.
-  // For instance
-  //
-  //    std::cerr << misc::escape('\n') << '\n';
-  //
-  // reports about `\n' instead of an actual new-line character.
 #include <misc/escape.hh>
 #include <misc/symbol.hh>
 #include <parse/parsetiger.hh>
 #include <parse/tiger-driver.hh>
 
-  // FIXME: Some code was deleted here (Define YY_USER_ACTION to update locations).
+#define YY_USER_ACTION td.location_.columns(size());
 
 #define TOKEN(Type)                             \
   parser::make_ ## Type(td.location_)
@@ -100,7 +94,6 @@
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 //  FLEX-COMPATIBLE DEFINITIONS                                               //
@@ -110,7 +103,7 @@
 #define INITIAL (0)
 #define SC_COMMENT (1)
 #define SC_STRING (2)
-#define YY_NUM_RULES (1)
+#define YY_NUM_RULES (59)
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -135,11 +128,8 @@
 // Add a param of function lex() generate in Lexer class
 #line 14 "src/parse/scantiger.ll"
 // Name of the class generate by reflex
-#line 62 "src/parse/scantiger.ll"
+#line 55 "src/parse/scantiger.ll"
 /* Abbreviations.  */
-#line 64 "src/parse/scantiger.ll"
-/* FIXME: Some code was deleted here. */
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -156,11 +146,11 @@
 
 parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
 {
-  static const char *REGEX_INITIAL = "(?m)((?:[0-9]+))";
+  static const char *REGEX_INITIAL = "(?m)((?:[0-9]+))|((?:[\\x09\\x0d\\x20]+))|(\\n)|((?:\\Q/*\\E))|(\")|((?:\\Q:=\\E))|((?:\\Q,\\E))|((?:\\Q:\\E))|((?:\\Q;\\E))|((?:\\Q(\\E))|((?:\\Q)\\E))|((?:\\Q[\\E))|((?:\\Q]\\E))|((?:\\Q{\\E))|((?:\\Q}\\E))|((?:\\Q.\\E))|((?:\\Q+\\E))|((?:\\Q-\\E))|((?:\\Q*\\E))|((?:\\Q/\\E))|((?:\\Q=\\E))|((?:\\Q<>\\E))|((?:\\Q<=\\E))|((?:\\Q>=\\E))|((?:\\Q<\\E))|((?:\\Q>\\E))|((?:\\Qarray\\E))|((?:\\Qif\\E))|((?:\\Qthen\\E))|((?:\\Qelse\\E))|((?:\\Qwhile\\E))|((?:\\Qfor\\E))|((?:\\Qto\\E))|((?:\\Qdo\\E))|((?:\\Qlet\\E))|((?:\\Qin\\E))|((?:\\Qend\\E))|((?:\\Qof\\E))|((?:\\Qbreak\\E))|((?:\\Qnil\\E))|((?:\\Qfunction\\E))|((?:\\Qvar\\E))|((?:\\Qtype\\E))|((?:[A-Za-z][0-9A-Z_a-z]*))|(.)";
   static const reflex::Pattern PATTERN_INITIAL(REGEX_INITIAL);
-  static const char *REGEX_SC_COMMENT = "(?m)";
+  static const char *REGEX_SC_COMMENT = "(?m)((?:\\Q/*\\E))|((?:\\Q*/\\E))|(\\n)|(.)";
   static const reflex::Pattern PATTERN_SC_COMMENT(REGEX_SC_COMMENT);
-  static const char *REGEX_SC_STRING = "(?m)";
+  static const char *REGEX_SC_STRING = "(?m)(\")|(\\\\n)|(\\\\t)|(\\\\\")|(\\\\\\\\)|(\\\\[0-9][0-9][0-9])|(\\n)|(.)";
   static const reflex::Pattern PATTERN_SC_STRING(REGEX_SC_STRING);
   if (!has_matcher())
   {
@@ -170,8 +160,8 @@ parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
   switch (start())
   {
     case INITIAL:
-#line 72 "src/parse/scantiger.ll"
-/* The rules.  */
+#line 68 "src/parse/scantiger.ll"
+/* Integers.  */
     break;
   }
   while (true)
@@ -194,16 +184,314 @@ parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
               output(matcher().input());
             }
             YY_BREAK
-          case 1: // rule src/parse/scantiger.ll:72: {int} :
-            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:72\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+          case 1: // rule src/parse/scantiger.ll:68: {int} :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:68\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
             YY_USER_ACTION
-#line 72 "src/parse/scantiger.ll"
+#line 68 "src/parse/scantiger.ll"
 {
                 int val = 0;
-  // FIXME: Some code was deleted here (Decode, and check the value).
+                try
+                  {
+                    val = boost::lexical_cast<int>(text());
+                  }
+                catch (const boost::bad_lexical_cast&)
+                  {
+                    td.error_ << misc::error::error_type::scan
+                              << td.location_
+                              << ": integer out of range: `"
+                              << misc::escape(text()) << "'\n";
+                  }
                 return TOKEN_VAL(INT, val);
               }
-  /* FIXME: Some code was deleted here. */
+
+            YY_BREAK
+          case 2: // rule src/parse/scantiger.ll:85: {blank} :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:85\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 85 "src/parse/scantiger.ll"
+{
+                /* Skip blanks. */
+              }
+
+            YY_BREAK
+          case 3: // rule src/parse/scantiger.ll:89: \n :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:89\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 89 "src/parse/scantiger.ll"
+{
+                td.location_.lines(1);
+                td.location_.step();
+              }
+
+            YY_BREAK
+          case 4: // rule src/parse/scantiger.ll:95: "/*" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:95\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 95 "src/parse/scantiger.ll"
+{
+                comment_depth_ = 1;
+                start(SC_COMMENT);
+              }
+
+            YY_BREAK
+          case 5: // rule src/parse/scantiger.ll:127: \" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:127\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 127 "src/parse/scantiger.ll"
+{
+                string_.clear();
+                start(SC_STRING);
+              }
+
+            YY_BREAK
+          case 6: // rule src/parse/scantiger.ll:185: ":=" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:185\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 185 "src/parse/scantiger.ll"
+return TOKEN(ASSIGN);
+            YY_BREAK
+          case 7: // rule src/parse/scantiger.ll:186: "," :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:186\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 186 "src/parse/scantiger.ll"
+return TOKEN(COMMA);
+            YY_BREAK
+          case 8: // rule src/parse/scantiger.ll:187: ":" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:187\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 187 "src/parse/scantiger.ll"
+return TOKEN(COLON);
+            YY_BREAK
+          case 9: // rule src/parse/scantiger.ll:188: ";" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:188\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 188 "src/parse/scantiger.ll"
+return TOKEN(SEMI);
+            YY_BREAK
+          case 10: // rule src/parse/scantiger.ll:189: "(" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:189\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 189 "src/parse/scantiger.ll"
+return TOKEN(LPAREN);
+            YY_BREAK
+          case 11: // rule src/parse/scantiger.ll:190: ")" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:190\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 190 "src/parse/scantiger.ll"
+return TOKEN(RPAREN);
+            YY_BREAK
+          case 12: // rule src/parse/scantiger.ll:191: "[" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:191\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 191 "src/parse/scantiger.ll"
+return TOKEN(LBRACK);
+            YY_BREAK
+          case 13: // rule src/parse/scantiger.ll:192: "]" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:192\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 192 "src/parse/scantiger.ll"
+return TOKEN(RBRACK);
+            YY_BREAK
+          case 14: // rule src/parse/scantiger.ll:193: "{" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:193\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 193 "src/parse/scantiger.ll"
+return TOKEN(LBRACE);
+            YY_BREAK
+          case 15: // rule src/parse/scantiger.ll:194: "}" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:194\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 194 "src/parse/scantiger.ll"
+return TOKEN(RBRACE);
+            YY_BREAK
+          case 16: // rule src/parse/scantiger.ll:195: "." :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:195\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 195 "src/parse/scantiger.ll"
+return TOKEN(DOT);
+            YY_BREAK
+          case 17: // rule src/parse/scantiger.ll:196: "+" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:196\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 196 "src/parse/scantiger.ll"
+return TOKEN(PLUS);
+            YY_BREAK
+          case 18: // rule src/parse/scantiger.ll:197: "-" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:197\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 197 "src/parse/scantiger.ll"
+return TOKEN(MINUS);
+            YY_BREAK
+          case 19: // rule src/parse/scantiger.ll:198: "*" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:198\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 198 "src/parse/scantiger.ll"
+return TOKEN(TIMES);
+            YY_BREAK
+          case 20: // rule src/parse/scantiger.ll:199: "/" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:199\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 199 "src/parse/scantiger.ll"
+return TOKEN(DIVIDE);
+            YY_BREAK
+          case 21: // rule src/parse/scantiger.ll:200: "=" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:200\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 200 "src/parse/scantiger.ll"
+return TOKEN(EQ);
+            YY_BREAK
+          case 22: // rule src/parse/scantiger.ll:201: "<>" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:201\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 201 "src/parse/scantiger.ll"
+return TOKEN(NE);
+            YY_BREAK
+          case 23: // rule src/parse/scantiger.ll:202: "<=" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:202\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 202 "src/parse/scantiger.ll"
+return TOKEN(LE);
+            YY_BREAK
+          case 24: // rule src/parse/scantiger.ll:203: ">=" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:203\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 203 "src/parse/scantiger.ll"
+return TOKEN(GE);
+            YY_BREAK
+          case 25: // rule src/parse/scantiger.ll:204: "<" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:204\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 204 "src/parse/scantiger.ll"
+return TOKEN(LT);
+            YY_BREAK
+          case 26: // rule src/parse/scantiger.ll:205: ">" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:205\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 205 "src/parse/scantiger.ll"
+return TOKEN(GT);
+
+            YY_BREAK
+          case 27: // rule src/parse/scantiger.ll:208: "array" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:208\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 208 "src/parse/scantiger.ll"
+return TOKEN(ARRAY);
+            YY_BREAK
+          case 28: // rule src/parse/scantiger.ll:209: "if" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:209\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 209 "src/parse/scantiger.ll"
+return TOKEN(IF);
+            YY_BREAK
+          case 29: // rule src/parse/scantiger.ll:210: "then" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:210\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 210 "src/parse/scantiger.ll"
+return TOKEN(THEN);
+            YY_BREAK
+          case 30: // rule src/parse/scantiger.ll:211: "else" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:211\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 211 "src/parse/scantiger.ll"
+return TOKEN(ELSE);
+            YY_BREAK
+          case 31: // rule src/parse/scantiger.ll:212: "while" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:212\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 212 "src/parse/scantiger.ll"
+return TOKEN(WHILE);
+            YY_BREAK
+          case 32: // rule src/parse/scantiger.ll:213: "for" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:213\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 213 "src/parse/scantiger.ll"
+return TOKEN(FOR);
+            YY_BREAK
+          case 33: // rule src/parse/scantiger.ll:214: "to" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:214\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 214 "src/parse/scantiger.ll"
+return TOKEN(TO);
+            YY_BREAK
+          case 34: // rule src/parse/scantiger.ll:215: "do" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:215\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 215 "src/parse/scantiger.ll"
+return TOKEN(DO);
+            YY_BREAK
+          case 35: // rule src/parse/scantiger.ll:216: "let" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:216\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 216 "src/parse/scantiger.ll"
+return TOKEN(LET);
+            YY_BREAK
+          case 36: // rule src/parse/scantiger.ll:217: "in" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:217\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 217 "src/parse/scantiger.ll"
+return TOKEN(IN);
+            YY_BREAK
+          case 37: // rule src/parse/scantiger.ll:218: "end" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:218\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 218 "src/parse/scantiger.ll"
+return TOKEN(END);
+            YY_BREAK
+          case 38: // rule src/parse/scantiger.ll:219: "of" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:219\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 219 "src/parse/scantiger.ll"
+return TOKEN(OF);
+            YY_BREAK
+          case 39: // rule src/parse/scantiger.ll:220: "break" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:220\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 220 "src/parse/scantiger.ll"
+return TOKEN(BREAK);
+            YY_BREAK
+          case 40: // rule src/parse/scantiger.ll:221: "nil" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:221\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 221 "src/parse/scantiger.ll"
+return TOKEN(NIL);
+            YY_BREAK
+          case 41: // rule src/parse/scantiger.ll:222: "function" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:222\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 222 "src/parse/scantiger.ll"
+return TOKEN(FUNCTION);
+            YY_BREAK
+          case 42: // rule src/parse/scantiger.ll:223: "var" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:223\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 223 "src/parse/scantiger.ll"
+return TOKEN(VAR);
+            YY_BREAK
+          case 43: // rule src/parse/scantiger.ll:224: "type" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:224\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 224 "src/parse/scantiger.ll"
+return TOKEN(TYPE);
+
+            YY_BREAK
+          case 44: // rule src/parse/scantiger.ll:227: {id} :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:227\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 227 "src/parse/scantiger.ll"
+return TOKEN_VAL(ID, misc::symbol(text()));
+
+            YY_BREAK
+          case 45: // rule src/parse/scantiger.ll:230: . :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:230\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 230 "src/parse/scantiger.ll"
+{
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": invalid character: `"
+                          << misc::escape(text()) << "'\n";
+              }
+
             YY_BREAK
         }
         break;
@@ -214,14 +502,60 @@ parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
           case 0:
             if (matcher().at_end())
             {
-              if (debug()) std::cerr << "--\033[1;35mEOF\033[0m start(" << start() << ")\n";
-              yyterminate();
+              if (debug()) std::cerr << "--\033[1;35mEOF rule src/parse/scantiger.ll:119\033[0m start(" << start() << ")\n";
+#line 119 "src/parse/scantiger.ll"
+{
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated comment\n";
+                start(INITIAL);
+              }
+
             }
             else
             {
               if (debug()) std::cerr << "--\033[1;31mdefault rule\033[0m\n";
               output(matcher().input());
             }
+            YY_BREAK
+          case 1: // rule src/parse/scantiger.ll:100: "/*" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:100\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 100 "src/parse/scantiger.ll"
+{
+                ++comment_depth_;
+              }
+
+            YY_BREAK
+          case 2: // rule src/parse/scantiger.ll:104: "*/" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:104\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 104 "src/parse/scantiger.ll"
+{
+                --comment_depth_;
+                if (comment_depth_ == 0)
+                  start(INITIAL);
+              }
+
+            YY_BREAK
+          case 3: // rule src/parse/scantiger.ll:110: \n :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:110\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 110 "src/parse/scantiger.ll"
+{
+                td.location_.lines(1);
+                td.location_.step();
+              }
+
+            YY_BREAK
+          case 4: // rule src/parse/scantiger.ll:115: . :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:115\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 115 "src/parse/scantiger.ll"
+{
+                /* Skip comment characters. */
+              }
+
             YY_BREAK
         }
         break;
@@ -232,14 +566,106 @@ parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
           case 0:
             if (matcher().at_end())
             {
-              if (debug()) std::cerr << "--\033[1;35mEOF\033[0m start(" << start() << ")\n";
-              yyterminate();
+              if (debug()) std::cerr << "--\033[1;35mEOF rule src/parse/scantiger.ll:173\033[0m start(" << start() << ")\n";
+#line 173 "src/parse/scantiger.ll"
+{
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated string\n";
+                start(INITIAL);
+              }
+
             }
             else
             {
               if (debug()) std::cerr << "--\033[1;31mdefault rule\033[0m\n";
               output(matcher().input());
             }
+            YY_BREAK
+          case 1: // rule src/parse/scantiger.ll:132: \" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:132\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 132 "src/parse/scantiger.ll"
+{
+                start(INITIAL);
+                return TOKEN_VAL(STRING, string_);
+              }
+
+            YY_BREAK
+          case 2: // rule src/parse/scantiger.ll:137: \\n :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:137\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 137 "src/parse/scantiger.ll"
+{
+                string_ += '\n';
+              }
+
+            YY_BREAK
+          case 3: // rule src/parse/scantiger.ll:141: \\t :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:141\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 141 "src/parse/scantiger.ll"
+{
+                string_ += '\t';
+              }
+
+            YY_BREAK
+          case 4: // rule src/parse/scantiger.ll:145: \\\" :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:145\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 145 "src/parse/scantiger.ll"
+{
+                string_ += '"';
+              }
+
+            YY_BREAK
+          case 5: // rule src/parse/scantiger.ll:149: \\\\ :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:149\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 149 "src/parse/scantiger.ll"
+{
+                string_ += '\\';
+              }
+
+            YY_BREAK
+          case 6: // rule src/parse/scantiger.ll:153: \\[0-9][0-9][0-9] :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:153\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 153 "src/parse/scantiger.ll"
+{
+                int c = std::stoi(text() + 1);
+                if (c > UCHAR_MAX)
+                  td.error_ << misc::error::error_type::scan
+                            << td.location_
+                            << ": invalid escape sequence: `"
+                            << misc::escape(text()) << "'\n";
+                else
+                  string_ += static_cast<char>(c);
+              }
+
+            YY_BREAK
+          case 7: // rule src/parse/scantiger.ll:164: \n :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:164\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 164 "src/parse/scantiger.ll"
+{
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated string\n";
+                td.location_.lines(1);
+                td.location_.step();
+                start(INITIAL);
+              }
+
+            YY_BREAK
+          case 8: // rule src/parse/scantiger.ll:180: . :
+            if (debug()) std::cerr << "--\033[1;35mrule src/parse/scantiger.ll:180\033[0m start(" << start() << ") " << matcher().lineno() << "," << matcher().columno() << ":\"\033[1m" << matcher().text() << "\033[0m\"\n";
+            YY_USER_ACTION
+#line 180 "src/parse/scantiger.ll"
+{
+                string_ += text();
+              }
+
             YY_BREAK
         }
         break;
@@ -248,14 +674,3 @@ parse::parser::symbol_type parse::Lexer::lex(::parse::TigerDriver& td)
     }
   }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-//                                                                            //
-//  SECTION 3: user code                                                      //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
-
-#line 79 "src/parse/scantiger.ll"
-
-
-
