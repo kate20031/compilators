@@ -26,19 +26,12 @@
 #include <boost/lexical_cast.hpp>
 
 #include <misc/contract.hh>
-  // Using misc::escape is very useful to quote non printable characters.
-  // For instance
-  //
-  //    std::cerr << misc::escape('\n') << '\n';
-  //
-  // reports about `\n' instead of an actual new-line character.
 #include <misc/escape.hh>
 #include <misc/symbol.hh>
 #include <parse/parsetiger.hh>
 #include <parse/tiger-driver.hh>
 
-  // FIXED: Some code was deleted here (Define YY_USER_ACTION to update locations).
-  #define YY_USER_ACTION td.location_.columns(size());
+#define YY_USER_ACTION td.location_.columns(size());
 
 #define TOKEN(Type)                             \
   parser::make_ ## Type(td.location_)
@@ -55,40 +48,40 @@
                 << misc::escape(text()) << "'\n";       \
   } while (false)
 
-
 %}
 
 %x SC_COMMENT SC_STRING
 
 /* Abbreviations.  */
 int             [0-9]+
-
-  /* FIXED: Some code was deleted here. */
 id              [a-zA-Z][a-zA-Z0-9_]*
 blank           [ \t\r]+
+
 %class{
-  // FIXED: Some code was deleted here (Local variables).
   std::string string_;
   int comment_depth_ = 0;
 }
 
 %%
-/* The rules.  */
+
+/* Integers.  */
 {int}         {
                 int val = 0;
-  // FIXED: Some code was deleted here (Decode, and check the value).
-              try {
-                  val = boost::lexical_cast<int>(text());
-                }
-                catch (const boost::bad_lexical_cast&) {
-                  td.error_ << misc::error::error_type::scan
-                            << td.location_
-                            << ": integer out of range: `"
-                            << misc::escape(text()) << "'\n";
-                }
+                try
+                  {
+                    val = boost::lexical_cast<int>(text());
+                  }
+                catch (const boost::bad_lexical_cast&)
+                  {
+                    td.error_ << misc::error::error_type::scan
+                              << td.location_
+                              << ": integer out of range: `"
+                              << misc::escape(text()) << "'\n";
+                  }
                 return TOKEN_VAL(INT, val);
               }
-  /* FIXED: Some code was deleted here. */
+
+/* Blanks and new lines.  */
 {blank}       {
                 /* Skip blanks. */
               }
@@ -98,6 +91,98 @@ blank           [ \t\r]+
                 td.location_.step();
               }
 
+/* Comments.  */
+"/*"          {
+                comment_depth_ = 1;
+                start(SC_COMMENT);
+              }
+
+<SC_COMMENT>"/*" {
+                ++comment_depth_;
+              }
+
+<SC_COMMENT>"*/" {
+                --comment_depth_;
+                if (comment_depth_ == 0)
+                  start(INITIAL);
+              }
+
+<SC_COMMENT>\n {
+                td.location_.lines(1);
+                td.location_.step();
+              }
+
+<SC_COMMENT>. {
+                /* Skip comment characters. */
+              }
+
+<SC_COMMENT><<EOF>> {
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated comment\n";
+                start(INITIAL);
+              }
+
+/* Strings.  */
+\"            {
+                string_.clear();
+                start(SC_STRING);
+              }
+
+<SC_STRING>\" {
+                start(INITIAL);
+                return TOKEN_VAL(STRING, string_);
+              }
+
+<SC_STRING>\\n {
+                string_ += '\n';
+              }
+
+<SC_STRING>\\t {
+                string_ += '\t';
+              }
+
+<SC_STRING>\\\" {
+                string_ += '"';
+              }
+
+<SC_STRING>\\\\ {
+                string_ += '\\';
+              }
+
+<SC_STRING>\\[0-9][0-9][0-9] {
+                int c = std::stoi(text() + 1);
+                if (c > UCHAR_MAX)
+                  td.error_ << misc::error::error_type::scan
+                            << td.location_
+                            << ": invalid escape sequence: `"
+                            << misc::escape(text()) << "'\n";
+                else
+                  string_ += static_cast<char>(c);
+              }
+
+<SC_STRING>\n {
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated string\n";
+                td.location_.lines(1);
+                td.location_.step();
+                start(INITIAL);
+              }
+
+<SC_STRING><<EOF>> {
+                td.error_ << misc::error::error_type::scan
+                          << td.location_
+                          << ": unterminated string\n";
+                start(INITIAL);
+              }
+
+<SC_STRING>. {
+                string_ += text();
+              }
+
+/* Punctuation and operators.  */
+":="          return TOKEN(ASSIGN);
 ","           return TOKEN(COMMA);
 ":"           return TOKEN(COLON);
 ";"           return TOKEN(SEMI);
@@ -118,8 +203,8 @@ blank           [ \t\r]+
 ">="          return TOKEN(GE);
 "<"           return TOKEN(LT);
 ">"           return TOKEN(GT);
-":="          return TOKEN(ASSIGN);
 
+/* Keywords.  */
 "array"       return TOKEN(ARRAY);
 "if"          return TOKEN(IF);
 "then"        return TOKEN(THEN);
@@ -138,15 +223,15 @@ blank           [ \t\r]+
 "var"         return TOKEN(VAR);
 "type"        return TOKEN(TYPE);
 
+/* Identifiers.  */
 {id}          return TOKEN_VAL(ID, misc::symbol(text()));
 
+/* Lexical errors.  */
 .             {
                 td.error_ << misc::error::error_type::scan
                           << td.location_
                           << ": invalid character: `"
                           << misc::escape(text()) << "'\n";
               }
+
 %%
-
-
-
