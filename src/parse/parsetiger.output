@@ -1,0 +1,475 @@
+Terminals unused in grammar
+
+    "string"
+    "&"
+    ":="
+    "break"
+    "_cast"
+    "class"
+    "/"
+    "do"
+    "."
+    "else"
+    "end"
+    "extends"
+    "for"
+    "function"
+    ">="
+    ">"
+    "if"
+    "import"
+    "in"
+    "["
+    "<="
+    "let"
+    "<"
+    "-"
+    "method"
+    "<>"
+    "new"
+    "nil"
+    "|"
+    "+"
+    "primitive"
+    "]"
+    ";"
+    "then"
+    "*"
+    "to"
+    "var"
+    "while"
+
+
+Grammar
+
+    0 $accept: program "end of file"
+
+    1 program: exp
+    2        | chunks
+
+    3 exp: "integer"
+
+    4 chunks: ε
+    5       | tychunk chunks
+
+    6 tychunk: tydec
+    7        | tydec tychunk
+
+    8 tydec: "type" "identifier" "=" ty
+
+    9 ty: typeid
+   10   | "{" tyfields "}"
+   11   | "array" "of" typeid
+
+   12 tyfields: ε
+   13         | tyfields.1
+
+   14 tyfields.1: tyfields.1 "," tyfield
+   15           | tyfield
+
+   16 tyfield: "identifier" ":" typeid
+
+   17 typeid: "identifier"
+   18       | "_namety" "(" "integer" ")"
+
+
+Terminals, with rules where they appear
+
+    "end of file" (0) 0
+    error (256)
+    "string" <std::string> (258)
+    "identifier" <misc::symbol> (259) 8 16 17
+    "integer" <int> (260) 3 18
+    "&" (261)
+    "array" (262) 11
+    ":=" (263)
+    "break" (264)
+    "_cast" (265)
+    "class" (266)
+    ":" (267) 16
+    "," (268) 14
+    "/" (269)
+    "do" (270)
+    "." (271)
+    "else" (272)
+    "end" (273)
+    "=" (274) 8
+    "extends" (275)
+    "for" (276)
+    "function" (277)
+    ">=" (278)
+    ">" (279)
+    "if" (280)
+    "import" (281)
+    "in" (282)
+    "{" (283) 10
+    "[" (284)
+    "<=" (285)
+    "let" (286)
+    "(" (287) 18
+    "<" (288)
+    "-" (289)
+    "method" (290)
+    "<>" (291)
+    "new" (292)
+    "nil" (293)
+    "of" (294) 11
+    "|" (295)
+    "+" (296)
+    "primitive" (297)
+    "}" (298) 10
+    "]" (299)
+    ")" (300) 18
+    ";" (301)
+    "then" (302)
+    "*" (303)
+    "to" (304)
+    "type" (305) 8
+    "var" (306)
+    "while" (307)
+    "_chunks" (308)
+    "_namety" (309) 18
+
+
+Nonterminals, with rules where they appear
+
+    $accept (55)
+        on left: 0
+    program (56)
+        on left: 1 2
+        on right: 0
+    exp <ast::Exp*> (57)
+        on left: 3
+        on right: 1
+    chunks <ast::ChunkList*> (58)
+        on left: 4 5
+        on right: 2 5
+    tychunk <ast::TypeChunk*> (59)
+        on left: 6 7
+        on right: 5 7
+    tydec <ast::TypeDec*> (60)
+        on left: 8
+        on right: 6 7
+    ty <ast::Ty*> (61)
+        on left: 9 10 11
+        on right: 8
+    tyfields <ast::fields_type*> (62)
+        on left: 12 13
+        on right: 10
+    tyfields.1 <ast::fields_type*> (63)
+        on left: 14 15
+        on right: 13 14
+    tyfield <ast::Field*> (64)
+        on left: 16
+        on right: 14 15
+    typeid <ast::NameTy*> (65)
+        on left: 17 18
+        on right: 9 11 16
+
+
+State 0
+
+    0 $accept: • program "end of file"
+    1 program: • exp
+    2        | • chunks
+    3 exp: • "integer"
+    4 chunks: ε •  ["end of file"]
+    5       | • tychunk chunks
+    6 tychunk: • tydec
+    7        | • tydec tychunk
+    8 tydec: • "type" "identifier" "=" ty
+
+    "integer"  shift, and go to state 1
+    "type"     shift, and go to state 2
+
+    $default  reduce using rule 4 (chunks)
+
+    program  go to state 3
+    exp      go to state 4
+    chunks   go to state 5
+    tychunk  go to state 6
+    tydec    go to state 7
+
+
+State 1
+
+    3 exp: "integer" •
+
+    $default  reduce using rule 3 (exp)
+
+
+State 2
+
+    8 tydec: "type" • "identifier" "=" ty
+
+    "identifier"  shift, and go to state 8
+
+
+State 3
+
+    0 $accept: program • "end of file"
+
+    "end of file"  shift, and go to state 9
+
+
+State 4
+
+    1 program: exp •
+
+    $default  reduce using rule 1 (program)
+
+
+State 5
+
+    2 program: chunks •
+
+    $default  reduce using rule 2 (program)
+
+
+State 6
+
+    4 chunks: ε •  ["end of file"]
+    5       | • tychunk chunks
+    5       | tychunk • chunks
+    6 tychunk: • tydec
+    7        | • tydec tychunk
+    8 tydec: • "type" "identifier" "=" ty
+
+    "type"  shift, and go to state 2
+
+    $default  reduce using rule 4 (chunks)
+
+    chunks   go to state 10
+    tychunk  go to state 6
+    tydec    go to state 7
+
+
+State 7
+
+    6 tychunk: • tydec
+    6        | tydec •  ["end of file"]
+    7        | • tydec tychunk
+    7        | tydec • tychunk
+    8 tydec: • "type" "identifier" "=" ty
+
+    "type"  shift, and go to state 2
+
+    $default  reduce using rule 6 (tychunk)
+
+    tychunk  go to state 11
+    tydec    go to state 7
+
+    Conflict between rule 6 and token "type" resolved as shift ("_chunks" < "type").
+
+
+State 8
+
+    8 tydec: "type" "identifier" • "=" ty
+
+    "="  shift, and go to state 12
+
+
+State 9
+
+    0 $accept: program "end of file" •
+
+    $default  accept
+
+
+State 10
+
+    5 chunks: tychunk chunks •
+
+    $default  reduce using rule 5 (chunks)
+
+
+State 11
+
+    7 tychunk: tydec tychunk •
+
+    $default  reduce using rule 7 (tychunk)
+
+
+State 12
+
+    8 tydec: "type" "identifier" "=" • ty
+    9 ty: • typeid
+   10   | • "{" tyfields "}"
+   11   | • "array" "of" typeid
+   17 typeid: • "identifier"
+   18       | • "_namety" "(" "integer" ")"
+
+    "identifier"  shift, and go to state 13
+    "array"       shift, and go to state 14
+    "{"           shift, and go to state 15
+    "_namety"     shift, and go to state 16
+
+    ty      go to state 17
+    typeid  go to state 18
+
+
+State 13
+
+   17 typeid: "identifier" •
+
+    $default  reduce using rule 17 (typeid)
+
+
+State 14
+
+   11 ty: "array" • "of" typeid
+
+    "of"  shift, and go to state 19
+
+
+State 15
+
+   10 ty: "{" • tyfields "}"
+   12 tyfields: ε •  ["}"]
+   13         | • tyfields.1
+   14 tyfields.1: • tyfields.1 "," tyfield
+   15           | • tyfield
+   16 tyfield: • "identifier" ":" typeid
+
+    "identifier"  shift, and go to state 20
+
+    $default  reduce using rule 12 (tyfields)
+
+    tyfields    go to state 21
+    tyfields.1  go to state 22
+    tyfield     go to state 23
+
+
+State 16
+
+   18 typeid: "_namety" • "(" "integer" ")"
+
+    "("  shift, and go to state 24
+
+
+State 17
+
+    8 tydec: "type" "identifier" "=" ty •
+
+    $default  reduce using rule 8 (tydec)
+
+
+State 18
+
+    9 ty: typeid •
+
+    $default  reduce using rule 9 (ty)
+
+
+State 19
+
+   11 ty: "array" "of" • typeid
+   17 typeid: • "identifier"
+   18       | • "_namety" "(" "integer" ")"
+
+    "identifier"  shift, and go to state 13
+    "_namety"     shift, and go to state 16
+
+    typeid  go to state 25
+
+
+State 20
+
+   16 tyfield: "identifier" • ":" typeid
+
+    ":"  shift, and go to state 26
+
+
+State 21
+
+   10 ty: "{" tyfields • "}"
+
+    "}"  shift, and go to state 27
+
+
+State 22
+
+   13 tyfields: tyfields.1 •  ["}"]
+   14 tyfields.1: tyfields.1 • "," tyfield
+
+    ","  shift, and go to state 28
+
+    $default  reduce using rule 13 (tyfields)
+
+
+State 23
+
+   15 tyfields.1: tyfield •
+
+    $default  reduce using rule 15 (tyfields.1)
+
+
+State 24
+
+   18 typeid: "_namety" "(" • "integer" ")"
+
+    "integer"  shift, and go to state 29
+
+
+State 25
+
+   11 ty: "array" "of" typeid •
+
+    $default  reduce using rule 11 (ty)
+
+
+State 26
+
+   16 tyfield: "identifier" ":" • typeid
+   17 typeid: • "identifier"
+   18       | • "_namety" "(" "integer" ")"
+
+    "identifier"  shift, and go to state 13
+    "_namety"     shift, and go to state 16
+
+    typeid  go to state 30
+
+
+State 27
+
+   10 ty: "{" tyfields "}" •
+
+    $default  reduce using rule 10 (ty)
+
+
+State 28
+
+   14 tyfields.1: tyfields.1 "," • tyfield
+   16 tyfield: • "identifier" ":" typeid
+
+    "identifier"  shift, and go to state 20
+
+    tyfield  go to state 31
+
+
+State 29
+
+   18 typeid: "_namety" "(" "integer" • ")"
+
+    ")"  shift, and go to state 32
+
+
+State 30
+
+   16 tyfield: "identifier" ":" typeid •
+
+    $default  reduce using rule 16 (tyfield)
+
+
+State 31
+
+   14 tyfields.1: tyfields.1 "," tyfield •
+
+    $default  reduce using rule 14 (tyfields.1)
+
+
+State 32
+
+   18 typeid: "_namety" "(" "integer" ")" •
+
+    $default  reduce using rule 18 (typeid)
