@@ -21,9 +21,10 @@ namespace ast
   {}
 
   template <template <typename> class Const>
-  void GenDefaultVisitor<Const>::operator()(const_t<Ast>& e)
+  void GenDefaultVisitor<Const>::operator()(const_t<Ast>&)
   {
-    super_type::operator()(e);
+    // Base AST node: nothing to visit.
+    // Do not call super_type::operator()(e), it causes the segfault.
   }
 
   template <template <typename> class Const>
@@ -59,7 +60,8 @@ namespace ast
   void GenDefaultVisitor<Const>::operator()(const_t<CallExp>& e)
   {
     for (const auto arg : e.args_get())
-    arg->accept(*this);
+      if (arg)
+        arg->accept(*this);
   }
 
   template <template <typename> class Const>
@@ -73,15 +75,18 @@ namespace ast
   void GenDefaultVisitor<Const>::operator()(const_t<RecordExp>& e)
   {
     e.type_name_get().accept(*this);
+
     for (const auto field : e.fields_get())
-    field->accept(*this);
+      if (field)
+        field->accept(*this);
   }
 
   template <template <typename> class Const>
   void GenDefaultVisitor<Const>::operator()(const_t<SeqExp>& e)
   {
     for (const auto exp : e.exps_get())
-    exp->accept(*this);
+      if (exp)
+        exp->accept(*this);
   }
 
   template <template <typename> class Const>
@@ -150,13 +155,15 @@ namespace ast
   void GenDefaultVisitor<Const>::operator()(const_t<ChunkList>& e)
   {
     for (const auto chunk : e)
-      chunk->accept(*this);
+      if (chunk)
+        chunk->accept(*this);
   }
 
   template <template <typename> class Const>
-  void GenDefaultVisitor<Const>::operator()(const_t<ChunkInterface>& e)
+  void GenDefaultVisitor<Const>::operator()(const_t<ChunkInterface>&)
   {
-    e.accept(*this);
+    // Base chunk interface: nothing to visit.
+    // Do not call e.accept(*this), it can recurse.
   }
 
   template <template <typename> class Const>
@@ -164,7 +171,8 @@ namespace ast
   inline void GenDefaultVisitor<Const>::chunk_visit(const_t<ChunkType>& e)
   {
     for (const auto dec : e)
-      dec->accept(*this);
+      if (dec)
+        dec->accept(*this);
   }
 
   template <template <typename> class Const>
@@ -176,9 +184,10 @@ namespace ast
   template <template <typename> class Const>
   void GenDefaultVisitor<Const>::operator()(const_t<VarDec>& e)
   {
-    // `type_name' might be omitted.
+    // type_name might be omitted.
     this->accept(e.type_name_get());
-    // `init' can be null in case of formal parameter.
+
+    // init can be null in case of formal parameter.
     this->accept(e.init_get());
   }
 
@@ -220,7 +229,8 @@ namespace ast
   void GenDefaultVisitor<Const>::operator()(const_t<RecordTy>& e)
   {
     for (const auto field : e.fields_get())
-    field->accept(*this);
+      if (field)
+        field->accept(*this);
   }
 
   template <template <typename> class Const>

@@ -1,1 +1,3 @@
-FAIL src/object/test-parse (exit status: 139)
+
+
+PASS src/object/test-parse (exit status: 0)

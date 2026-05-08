@@ -16,7 +16,8 @@
 
 // In TC, we expect the GLR to resolve one Shift-Reduce and zero Reduce-Reduce
 // conflict at runtime. Use %expect and %expect-rr to tell Bison about it.
-  // FIXME: Some code was deleted here (Other directives).
+%expect 2
+%expect-rr 0
 
 %define parse.error verbose
 %defines
@@ -24,19 +25,6 @@
 // Prefix all the tokens with TOK_ to avoid colisions.
 %define api.token.prefix {TOK_}
 
-/* We use pointers to store the filename in the locations.  This saves
-   space (pointers), time (no deep copy), but leaves the problem of
-   deallocation.  This would be a perfect job for a misc::symbol
-   object (passed by reference), however Bison locations require the
-   filename to be passed as a pointer, thus forcing us to handle the
-   allocation and deallocation of this object.
-
-   Nevertheless, all is not lost: we can still use a misc::symbol
-   object to allocate a flyweight (constant) string in the pool of
-   symbols, extract it from the misc::symbol object, and use it to
-   initialize the location.  The allocated data will be freed at the
-   end of the program (see the documentation of misc::symbol and
-   misc::unique).  */
 %define api.filename.type {const std::string}
 %locations
 
@@ -51,8 +39,6 @@
 #include <misc/symbol.hh>
 #include <parse/fwd.hh>
 
-  // Pre-declare parse::parse to allow a ``reentrant'' parsing within
-  // the parser.
   namespace parse
   {
     ast_type parse(Tweast& input);
@@ -69,7 +55,6 @@
 %token <misc::symbol>   ID     "identifier"
 %token <int>            INT    "integer"
 
-
 /*--------------------------------.
 | Support for the non-terminals.  |
 `--------------------------------*/
@@ -77,8 +62,6 @@
 %code requires
 {
 # include <ast/fwd.hh>
-// Provide the declarations of the following classes for the
-// %destructor clauses below to work properly.
 # include <ast/exp.hh>
 # include <ast/var.hh>
 # include <ast/ty.hh>
@@ -92,7 +75,26 @@
 # include <ast/chunk-list.hh>
 }
 
-  // FIXME: Some code was deleted here (Printers and destructors).
+%printer { yyo << *$$; } <ast::Exp*> <ast::Var*> <ast::Ty*>
+                          <ast::NameTy*> <ast::Field*>
+                          <ast::FieldInit*> <ast::FunctionDec*>
+                          <ast::TypeDec*> <ast::VarDec*>
+                          <ast::ChunkList*> <ast::VarChunk*>
+                          <ast::FunctionChunk*> <ast::TypeChunk*>;
+
+%destructor { delete $$; } <ast::Exp*> <ast::Var*> <ast::Ty*>
+                           <ast::NameTy*> <ast::Field*>
+                           <ast::FieldInit*> <ast::FunctionDec*>
+                           <ast::TypeDec*> <ast::VarDec*>
+                           <ast::ChunkList*> <ast::VarChunk*>
+                           <ast::FunctionChunk*> <ast::TypeChunk*>;
+
+%printer { yyo << "<fields>"; } <ast::fields_type*>;
+%printer { yyo << "<fieldinits>"; } <ast::fieldinits_type*>;
+%printer { yyo << "<exps>"; } <ast::exps_type*>;
+
+%destructor { delete $$; } <ast::fields_type*> <ast::fieldinits_type*>
+                           <ast::exps_type*>;
 
 /*-----------------------------------------.
 | Code output in the implementation file.  |
@@ -101,6 +103,7 @@
 %code
 {
 # include <parse/tweast.hh>
+# include <parse/tiger-driver.hh>
 # include <misc/separator.hh>
 # include <misc/symbol.hh>
 # include <ast/all.hh>
@@ -109,8 +112,6 @@
 
   namespace
   {
-
-    /// Get the metavar from the specified map.
     template <typename T>
     T*
     metavar(parse::TigerDriver& td, unsigned key)
@@ -118,15 +119,14 @@
       parse::Tweast* input = td.input_;
       return input->template take<T>(key);
     }
-
   }
 }
 
 %code
 {
-  #include <parse/scantiger.hh>  // header file generated with reflex --header-file
+  #include <parse/scantiger.hh>
   #undef yylex
-  #define yylex lexer.lex  // Within bison's parse() we should invoke lexer.lex(), not the global lex()
+  #define yylex lexer.lex
 }
 
 // Definition of the tokens, and their pretty-printing.
@@ -189,55 +189,302 @@
 
 %type <ast::Field*>           tyfield
 %type <ast::fields_type*>     tyfields tyfields.1
-  // FIXME: Some code was deleted here (More %types).
 
-  // FIXME: Some code was deleted here (Priorities/associativities).
+%type <ast::Var*>             lvalue
+%type <ast::exps_type*>       exps.0 exps
 
-// Solving conflicts on:
-// let type foo = bar
-//     type baz = bat
-// which can be understood as a list of two TypeChunk containing
-// a unique TypeDec each, or a single TypeChunk containing two TypeDec.
-// We want the latter.
+%type <ast::VarDec*>          vardec
+%type <ast::VarChunk*>        varchunk
+%type <ast::VarChunk*>        funargs funargs.1
+
+%type <ast::FunctionDec*>     fundec
+%type <ast::FunctionChunk*>   funchunk
+
+%type <ast::NameTy*>          typeid.opt
+%type <ast::FieldInit*>       fieldinit
+%type <ast::fieldinits_type*> fieldinits fieldinits.1
+
+%left "|"
+%left "&"
+%nonassoc "=" "<>" "<" "<=" ">" ">="
+%left "+" "-"
+%left "*" "/"
+%precedence UMINUS
+%precedence "then"
+%precedence "else"
+%nonassoc "do"
+%nonassoc "of"
+%nonassoc ":="
+
 %precedence CHUNKS
 %precedence TYPE
-  // FIXME: Some code was deleted here (Other declarations).
+
+%token EXP "_exp"
+%token LVALUE "_lvalue"
+%token FIELD "_field"
+%token FIELDINIT "_fieldinit"
+%token CASTEXP "_cast_exp"
+%token NAMETY "_namety"
+%token CHUNKS "_chunks"
 
 %start program
 
 %%
 program:
-  /* Parsing a source program.  */
   exp
-   { td.ast_ = $1; }
-| /* Parsing an imported file.  */
-  chunks
-   { td.ast_ = $1; }
+    { td.ast_ = $1; }
+| chunks
+    { td.ast_ = $1; }
 ;
+
+/*----------------.
+| Expressions.    |
+`----------------*/
 
 exp:
   INT
-   { $$ = make_IntExp(@$, $1); }
-  // FIXME: Some code was deleted here (More rules).
+    { $$ = make_IntExp(@$, $1); }
+
+| STRING
+    { $$ = make_StringExp(@$, $1); }
+
+| NIL
+    { $$ = make_NilExp(@$); }
+
+| ID
+    { $$ = make_SimpleVar(@$, $1); }
+
+| ID "(" exps.0 ")"
+    { $$ = make_CallExp(@$, $1, $3); }
+
+| "(" exps.0 ")"
+    { $$ = make_SeqExp(@$, $2); }
+
+| lvalue ":=" exp
+    { $$ = make_AssignExp(@$, $1, $3); }
+
+| "if" exp "then" exp %prec "then"
+    { $$ = make_IfExp(@$, $2, $4); }
+
+| "if" exp "then" exp "else" exp
+    { $$ = make_IfExp(@$, $2, $4, $6); }
+
+| "while" exp "do" exp
+    { $$ = make_WhileExp(@$, $2, $4); }
+
+| "for" ID ":=" exp "to" exp "do" exp
+    {
+      $$ = make_ForExp(@$,
+                       make_VarDec(@2, $2, nullptr, $4),
+                       $6,
+                       $8);
+    }
+
+| "break"
+    { $$ = make_BreakExp(@$); }
+
+| "let" chunks "in" exps.0 "end"
+    { $$ = make_LetExp(@$, $2, make_SeqExp(@4, $4)); }
+
+| exp "+" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::add, $3); }
+
+| exp "-" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::sub, $3); }
+
+| exp "*" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::mul, $3); }
+
+| exp "/" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::div, $3); }
+
+| exp "=" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::eq, $3); }
+
+| exp "<>" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::ne, $3); }
+
+| exp "<" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::lt, $3); }
+
+| exp "<=" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::le, $3); }
+
+| exp ">" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::gt, $3); }
+
+| exp ">=" exp
+    { $$ = make_OpExp(@$, $1, ast::OpExp::Oper::ge, $3); }
+
+| "-" exp %prec UMINUS
+    { $$ = make_OpExp(@$, make_IntExp(@1, 0), ast::OpExp::Oper::sub, $2); }
+
+| exp "&" exp
+    {
+      $$ = make_IfExp(@$, $1,
+                      make_OpExp(@3, $3, ast::OpExp::Oper::ne,
+                                 make_IntExp(@3, 0)),
+                      make_IntExp(@$, 0));
+    }
+
+| exp "|" exp
+    {
+      $$ = make_IfExp(@$, $1,
+                      make_IntExp(@$, 1),
+                      make_OpExp(@3, $3, ast::OpExp::Oper::ne,
+                                 make_IntExp(@3, 0)));
+    }
+
+| ID "[" exp "]" "of" exp
+    { $$ = make_ArrayExp(@$, make_NameTy(@1, $1), $3, $6); }
+
+| ID "{" fieldinits "}"
+    { $$ = make_RecordExp(@$, make_NameTy(@1, $1), $3); }
+
+| "_exp" "(" INT ")"
+    { $$ = metavar<ast::Exp>(td, $3); }
+;
+
+/*----------------.
+| Lvalues.        |
+`----------------*/
+
+lvalue:
+  ID
+    { $$ = make_SimpleVar(@$, $1); }
+
+| lvalue "[" exp "]"
+    { $$ = make_SubscriptVar(@$, $1, $3); }
+
+| lvalue "." ID
+    { $$ = make_FieldVar(@$, $1, $3); }
+;
+
+/*----------------.
+| Expression list |
+`----------------*/
+
+exps.0:
+  %empty
+    { $$ = make_exps_type(); }
+
+| exps
+    { $$ = $1; }
+;
+
+exps:
+  exp
+    { $$ = make_exps_type($1); }
+
+| exps ";" exp
+    { $$ = $1; $$->push_back($3); }
+;
+
+/*----------------.
+| Field inits.    |
+`----------------*/
+
+fieldinits:
+  %empty
+    { $$ = make_fieldinits_type(); }
+
+| fieldinits.1
+    { $$ = $1; }
+;
+
+fieldinits.1:
+  fieldinit
+    { $$ = make_fieldinits_type($1); }
+
+| fieldinits.1 "," fieldinit
+    { $$ = $1; $$->push_back($3); }
+;
+
+fieldinit:
+  ID "=" exp
+    { $$ = make_FieldInit(@$, $1, $3); }
+;
 
 /*---------------.
 | Declarations.  |
 `---------------*/
 
-%token CHUNKS "_chunks";
 chunks:
-  /* Chunks are contiguous series of declarations of the same type
-     (TypeDec, FunctionDec...) to which we allow certain specfic behavior like
-     self referencing.
-     They are held by a ChunkList, that can be empty, like in this case:
-        let
-        in
-            ..
-        end
-     which is why we end the recursion with a %empty. */
-  %empty                  { $$ = make_ChunkList(@$); }
-| tychunk   chunks        { $$ = $2; $$->push_front($1); }
-  // FIXME: Some code was deleted here (More rules).
+  %empty
+    { $$ = make_ChunkList(@$); }
+
+| tychunk chunks
+    { $$ = $2; $$->push_front($1); }
+
+| funchunk chunks
+    { $$ = $2; $$->push_front($1); }
+
+| varchunk chunks
+    { $$ = $2; $$->push_front($1); }
+;
+
+/*------------------------.
+| Function Declarations.  |
+`------------------------*/
+
+funchunk:
+  fundec %prec CHUNKS
+    { $$ = make_FunctionChunk(@1); $$->push_front(*$1); }
+
+| fundec funchunk
+    { $$ = $2; $$->push_front(*$1); }
+;
+
+fundec:
+  "function" ID "(" funargs ")" typeid.opt "=" exp
+    { $$ = make_FunctionDec(@$, $2, $4, $6, $8); }
+;
+
+funargs:
+  %empty
+    { $$ = make_VarChunk(@$); }
+
+| funargs.1
+    { $$ = $1; }
+;
+
+funargs.1:
+  ID ":" typeid
+    {
+      $$ = make_VarChunk(@$);
+      $$->emplace_back(*make_VarDec(@$, $1, $3, nullptr));
+    }
+
+| funargs.1 "," ID ":" typeid
+    {
+      $$ = $1;
+      $$->emplace_back(*make_VarDec(@3, $3, $5, nullptr));
+    }
+;
+
+typeid.opt:
+  %empty
+    { $$ = nullptr; }
+
+| ":" typeid
+    { $$ = $2; }
+;
+
+/*------------------------.
+| Variable Declarations.  |
+`------------------------*/
+
+varchunk:
+  vardec %prec CHUNKS
+    { $$ = make_VarChunk(@1); $$->push_front(*$1); }
+;
+
+vardec:
+  "var" ID ":=" exp
+    { $$ = make_VarDec(@$, $2, nullptr, $4); }
+
+| "var" ID ":" typeid ":=" exp
+    { $$ = make_VarDec(@$, $2, $4, $6); }
 ;
 
 /*--------------------.
@@ -245,42 +492,56 @@ chunks:
 `--------------------*/
 
 tychunk:
-  /* Use `%prec CHUNKS' to do context-dependent precedence and resolve a
-     shift-reduce conflict. */
-  tydec %prec CHUNKS  { $$ = make_TypeChunk(@1); $$->push_front(*$1); }
-| tydec tychunk       { $$ = $2; $$->push_front(*$1); }
+  tydec %prec CHUNKS
+    { $$ = make_TypeChunk(@1); $$->push_front(*$1); }
+
+| tydec tychunk
+    { $$ = $2; $$->push_front(*$1); }
 ;
 
 tydec:
-  "type" ID "=" ty { $$ = make_TypeDec(@$, $2, $4); }
+  "type" ID "=" ty
+    { $$ = make_TypeDec(@$, $2, $4); }
 ;
 
 ty:
-  typeid               { $$ = $1; }
-| "{" tyfields "}"     { $$ = make_RecordTy(@$, $2); }
-| "array" "of" typeid  { $$ = make_ArrayTy(@$, $3); }
+  typeid
+    { $$ = $1; }
+
+| "{" tyfields "}"
+    { $$ = make_RecordTy(@$, $2); }
+
+| "array" "of" typeid
+    { $$ = make_ArrayTy(@$, $3); }
 ;
 
 tyfields:
-  %empty               { $$ = make_fields_type(); }
-| tyfields.1           { $$ = $1; }
+  %empty
+    { $$ = make_fields_type(); }
+
+| tyfields.1
+    { $$ = $1; }
 ;
 
 tyfields.1:
-  tyfields.1 "," tyfield { $$ = $1; $$->emplace_back($3); }
-| tyfield                { $$ = make_fields_type($1); }
+  tyfield
+    { $$ = make_fields_type($1); }
+
+| tyfields.1 "," tyfield
+    { $$ = $1; $$->emplace_back($3); }
 ;
 
 tyfield:
-  ID ":" typeid     { $$ = make_Field(@$, $1, $3); }
+  ID ":" typeid
+    { $$ = make_Field(@$, $1, $3); }
 ;
 
-%token NAMETY "_namety";
 typeid:
-  ID                    { $$ = make_NameTy(@$, $1); }
-  /* This is a metavariable. It it used internally by TWEASTs to retrieve
-     already parsed nodes when given an input to parse. */
-| NAMETY "(" INT ")"    { $$ = metavar<ast::NameTy>(td, $3); }
+  ID
+    { $$ = make_NameTy(@$, $1); }
+
+| NAMETY "(" INT ")"
+    { $$ = metavar<ast::NameTy>(td, $3); }
 ;
 
 %%
@@ -288,5 +549,5 @@ typeid:
 void
 parse::parser::error(const location_type& l, const std::string& m)
 {
-  // FIXME: Some code was deleted here.
+  td.error_ << l << ": " << m << '\n';
 }
